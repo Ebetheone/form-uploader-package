@@ -1,5 +1,7 @@
 # form-uploader
 
+[![npm version](https://img.shields.io/npm/v/form-uploader.svg)](https://www.npmjs.com/package/form-uploader)
+
 One form for every site: contact fields plus multi-image upload. A framework-agnostic core plus a drop-in `<form-uploader>` custom element. Zero runtime dependencies, ESM only, TypeScript types included.
 
 - Drop-in element works in plain HTML and anywhere, with React and Vue wrappers included.
