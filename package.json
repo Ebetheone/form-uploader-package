@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "description": "Reusable contact + multi-image upload form: framework-agnostic core and a drop-in custom element for any website.",
   "author": "Elbeg Darkhanbaatar",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ebetheone/package.git"
+  },
   "keywords": [
     "form",
     "contact-form",
