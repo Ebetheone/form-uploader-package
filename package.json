@@ -1,0 +1,47 @@
+{
+  "name": "form-uploader",
+  "version": "0.1.0",
+  "description": "Reusable contact + multi-image upload form: framework-agnostic core and a drop-in custom element for any website.",
+  "author": "Elbeg Darkhanbaatar",
+  "keywords": [
+    "form",
+    "contact-form",
+    "file-upload",
+    "image-upload",
+    "uploader",
+    "web-component",
+    "custom-element",
+    "form-validation",
+    "framework-agnostic"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./element": {
+      "types": "./dist/element.d.ts",
+      "default": "./dist/element.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test test/",
+    "prepack": "npm run build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "prettier": "^3.9.10",
+    "typescript": "^7.0.2"
+  }
+}

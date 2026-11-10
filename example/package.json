@@ -1,0 +1,19 @@
+{
+  "name": "form-uploader-example",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "predev": "npm --prefix .. run build",
+    "dev": "next dev --port 3000",
+    "prebuild": "npm --prefix .. run build",
+    "build": "next build",
+    "start": "next start --port 3000"
+  },
+  "dependencies": {
+    "form-uploader": "file:..",
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  }
+}

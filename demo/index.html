@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>form-uploader demo</title>
+    <style>
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+        line-height: 1.5;
+        color: #1c1917;
+        background: #fafaf9;
+        max-width: 680px;
+        margin: 2.5rem auto;
+        padding: 0 1.25rem;
+      }
+      h1 {
+        font-size: 1.5rem;
+        letter-spacing: -0.01em;
+      }
+      h2 {
+        font-size: 1.125rem;
+        margin-top: 2rem;
+      }
+      pre {
+        background: #ffffff;
+        border: 1px solid #e7e5e4;
+        border-radius: 10px;
+        padding: 1rem;
+        overflow: auto;
+        font-size: 0.8125rem;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          color: #e7e5e4;
+          background: #0c0a09;
+        }
+        pre {
+          background: #1c1917;
+          border-color: #292524;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>form-uploader demo</h1>
+    <form-uploader id="u" submit-label="Send"></form-uploader>
+    <h2>Submitted payload</h2>
+    <pre id="out">Fill the form and submit…</pre>
+    <script type="module">
+      import "../dist/element.js";
+      import { DEFAULT_FIELDS } from "../dist/index.js";
+
+      const el = document.getElementById("u");
+      el.config = {
+        fields: [...DEFAULT_FIELDS, { name: "company", label: "Company" }],
+        files: { maxFiles: 3 },
+      };
+      el.onSubmit = async ({ values, files, formData }) => {
+        document.getElementById("out").textContent = JSON.stringify(
+          {
+            values,
+            files: files.map((file) => `${file.name} (${file.size} bytes)`),
+            formDataKeys: [...formData.keys()],
+          },
+          null,
+          2,
+        );
+      };
+    </script>
+  </body>
+</html>

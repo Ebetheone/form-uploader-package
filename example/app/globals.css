@@ -1,0 +1,77 @@
+body {
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  line-height: 1.5;
+  color: #1c1917;
+  background: #fafaf9;
+  max-width: 680px;
+  margin: 2.5rem auto;
+  padding: 0 1.25rem;
+}
+
+h1 {
+  font-size: 1.5rem;
+  letter-spacing: -0.01em;
+}
+
+h2 {
+  font-size: 1.125rem;
+  margin-top: 2rem;
+}
+
+code {
+  font-size: 0.875em;
+}
+
+pre {
+  background: #ffffff;
+  border: 1px solid #e7e5e4;
+  border-radius: 10px;
+  padding: 1rem;
+  overflow: auto;
+  font-size: 0.8125rem;
+}
+
+.actions {
+  margin-top: 1rem;
+}
+
+.actions button {
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1c1917;
+  background: #ffffff;
+  border: 1px solid #d6d3d1;
+  border-radius: 10px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+.actions button:hover {
+  border-color: #a8a29e;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    color: #e7e5e4;
+    background: #0c0a09;
+  }
+
+  pre {
+    background: #1c1917;
+    border-color: #292524;
+  }
+
+  .actions button {
+    color: #e7e5e4;
+    background: #1c1917;
+    border-color: #44403c;
+  }
+
+  .actions button:hover {
+    border-color: #57534e;
+  }
+}
