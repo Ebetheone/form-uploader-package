@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+- Point repository and homepage links at the renamed GitHub repo.
+
 ## 0.2.0
 
 - React (`form-uploader/react`) and Vue (`form-uploader/vue`) wrappers with submit/change events and reset/validate handles.

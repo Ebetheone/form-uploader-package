@@ -138,7 +138,7 @@ Import `form-uploader/element` once (for example in `main.ts`) to register the t
 No build step. Pin a version and drop in a script tag:
 
 ```html
-<script src="https://unpkg.com/form-uploader@0.2.0/dist/form-uploader.global.js"></script>
+<script src="https://unpkg.com/form-uploader@0.2.1/dist/form-uploader.global.js"></script>
 <form-uploader submit-label="Send"></form-uploader>
 <script>
   document.querySelector("form-uploader").onSubmit = async ({ formData }) => {
