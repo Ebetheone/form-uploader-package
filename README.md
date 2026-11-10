@@ -2,7 +2,7 @@
 
 One form for every site: contact fields plus multi-image upload. A framework-agnostic core plus a drop-in `<form-uploader>` custom element. Zero runtime dependencies, ESM only, TypeScript types included.
 
-- Drop-in element works in plain HTML, React, Vue, Svelte, anywhere.
+- Drop-in element works in plain HTML and anywhere, with React and Vue wrappers included.
 - Core module is DOM-free, so you can drive your own UI or run it in Node.
 - Validation, file limits, and `FormData` payload building included.
 - Themed with CSS variables, dark-mode aware, keyboard accessible.
@@ -65,33 +65,84 @@ el.reset();
 - `el.uploader` exposes the core instance below for direct control.
 - The `submit-label` attribute sets the button text (default `"Submit"`).
 
-## React
+## Frameworks
 
-Custom element props must be assigned, not passed as attributes. Use a ref:
+### React / Next.js
 
 ```jsx
-import { useEffect, useRef, useState } from "react";
+import { FormUploader } from "form-uploader/react";
+
+<FormUploader
+  fields={fields}
+  files={{ maxFiles: 3 }}
+  submitLabel="Send"
+  onSubmit={async ({ formData }) => {
+    await fetch("/api/upload", { method: "POST", body: formData });
+  }}
+  onChange={({ values }) => console.log(values)}
+/>;
+```
+
+The wrapper is marked client-side, so Next.js App Router pages can import it directly, even from Server Components. `onChange` streams `{ values, files, errors, valid }` snapshots. A `ref` exposes `reset()`, `validate()`, `getValues()`, and `getFiles()`. Equal configs never wipe typed input, so inline props are safe. Requires `react >= 18`.
+
+### Vue
+
+```vue
+<script setup>
+import { FormUploader } from "form-uploader/vue";
+</script>
+
+<template>
+  <FormUploader :fields="fields" :files="{ maxFiles: 3 }" submit-label="Send" @submit="send" />
+</template>
+```
+
+Props are `fields`, `files`, `validateOnChange`, and `submitLabel`. Events are `submit` and `change`, carrying the same payloads as the element. `class`, `style`, and other attributes fall through to the element for placement. A template ref exposes `reset()`, `validate()`, `getValues()`, and `getFiles()`. Requires `vue ^3`.
+
+### Angular
+
+No wrapper needed: bind the element directly.
+
+```ts
 import "form-uploader/element";
-import { DEFAULT_FIELDS } from "form-uploader";
+import { CUSTOM_ELEMENTS_SCHEMA, Component } from "@angular/core";
+import type { FormSubmitDetail, FormUploaderConfig } from "form-uploader";
 
-export default function ContactForm() {
-  const formRef = useRef(null);
-  const [result, setResult] = useState(null);
+@Component({
+  selector: "app-contact",
+  standalone: true,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  template: `
+    <form-uploader
+      [config]="config"
+      submit-label="Send"
+      (form-submit)="onSubmit($event.detail)"
+    ></form-uploader>
+  `,
+})
+export class ContactComponent {
+  config: FormUploaderConfig = { files: { maxFiles: 3 } };
 
-  useEffect(() => {
-    const el = formRef.current;
-    if (!el) return;
-    el.config = {
-      fields: [...DEFAULT_FIELDS, { name: "company", label: "Company" }],
-      files: { maxFiles: 3 },
-    };
-    el.onSubmit = async ({ values, files, formData }) => {
-      setResult({ values, files: files.map((file) => file.name) });
-    };
-  }, []);
-
-  return <form-uploader ref={formRef} submit-label="Send" />;
+  onSubmit(detail: FormSubmitDetail): void {
+    fetch("/api/upload", { method: "POST", body: detail.formData });
+  }
 }
+```
+
+Import `form-uploader/element` once (for example in `main.ts`) to register the tag. `config` binds as a property and the events carry the same payloads as below. A `ViewChild` reference gives you `reset()` and the core `uploader` for anything else.
+
+### Server-rendered pages (Django, Flask, plain HTML)
+
+No build step. Pin a version and drop in a script tag:
+
+```html
+<script src="https://unpkg.com/form-uploader@0.2.0/dist/form-uploader.global.js"></script>
+<form-uploader submit-label="Send"></form-uploader>
+<script>
+  document.querySelector("form-uploader").onSubmit = async ({ formData }) => {
+    await fetch("/upload", { method: "POST", body: formData });
+  };
+</script>
 ```
 
 ## Core (your own UI)
@@ -136,6 +187,8 @@ Field options:
 - `required` (default `false`), `placeholder`
 - `minLength`, `maxLength`, counted in characters
 - `validate(value)` returning an error string or `null`
+- `width` (`full` default, `half` shares a row; stacks on narrow containers)
+- `help` (hint text under the input), `group` (name of a group below)
 
 File options:
 
@@ -145,9 +198,21 @@ File options:
 - `required` (default `false`)
 - Pass `files: false` to disable uploads entirely
 
+Top-level options:
+
+- `groups: [{ name, title, description }]` renders titled cards in order; fields without a group, or with an unknown one, render first
+- `validateOnChange` (default `false`): revalidate on every keystroke with live errors; focus is preserved
+
 Validation order per field is required, email format, length, then your `validate`, first failure wins. Email is checked only when non-empty. Phone has no format check since formats vary, so add `validate` or `minLength` if you need one.
 
 The payload is a `FormData` with one entry per field plus each file under `fieldName`, ready to `POST` to your backend.
+
+## Events
+
+Both events bubble and cross shadow DOM.
+
+- `form-submit`: a valid submit, detail `{ formData, values, files }`. Calling `preventDefault()` skips `onSubmit`.
+- `form-change`: every keystroke and file change, detail `{ values, files, errors, valid }`. `errors` and `valid` reflect the last validation run, so pair it with `validateOnChange: true` for live validity.
 
 ## Styling
 
@@ -175,7 +240,7 @@ form-uploader {
 | `--fu-radius`          | `10px`                  | Inputs, dropzone, button      |
 | `--fu-radius-sm`       | `8px`                   | Preview cards                 |
 
-For deeper restyling, every part is exposed via `::part`: `form`, `field`, `label`, `input`, `error`, `dropzone`, `dropzone-title`, `dropzone-hint`, `file-input`, `previews`, `preview`, `remove`, `submit`.
+For deeper restyling, every part is exposed via `::part`: `form`, `field`, `label`, `input`, `help`, `error`, `group`, `group-title`, `group-description`, `dropzone`, `dropzone-title`, `dropzone-hint`, `file-input`, `previews`, `preview`, `remove`, `submit`.
 
 ```css
 form-uploader::part(submit) {

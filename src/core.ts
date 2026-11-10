@@ -1,5 +1,7 @@
 export type FieldType = "text" | "email" | "tel" | "textarea";
 
+export type FieldWidth = "full" | "half";
+
 export interface FieldConfig {
   name: string;
   label?: string;
@@ -8,6 +10,9 @@ export interface FieldConfig {
   placeholder?: string;
   minLength?: number;
   maxLength?: number;
+  width?: FieldWidth;
+  help?: string;
+  group?: string;
   validate?: (value: string) => string | null;
 }
 
@@ -19,14 +24,23 @@ export interface FileUploadConfig {
   required?: boolean;
 }
 
+export interface FormGroup {
+  name: string;
+  title: string;
+  description?: string;
+}
+
 export interface FormUploaderConfig {
   fields?: FieldConfig[];
   files?: FileUploadConfig | false;
+  groups?: FormGroup[];
+  validateOnChange?: boolean;
 }
 
-export interface NormalizedField extends Omit<FieldConfig, "type" | "required"> {
+export interface NormalizedField extends Omit<FieldConfig, "type" | "required" | "width"> {
   type: FieldType;
   required: boolean;
+  width: FieldWidth;
 }
 
 export interface ResolvedFileUploadConfig {
@@ -58,6 +72,13 @@ export interface FormSubmitDetail {
   formData: FormData;
   values: Record<string, string>;
   files: File[];
+}
+
+export interface FormChangeDetail {
+  values: Record<string, string>;
+  files: File[];
+  errors: ValidationErrors;
+  valid: boolean;
 }
 
 export const DEFAULT_FIELDS: FieldConfig[] = [
@@ -102,6 +123,7 @@ export function createFormUploader(config: FormUploaderConfig = {}): FormUploade
     ...field,
     type: field.type ?? "text",
     required: field.required ?? false,
+    width: field.width ?? "full",
   }));
   const filesEnabled = config.files !== false;
   const fileConfig: ResolvedFileUploadConfig = {

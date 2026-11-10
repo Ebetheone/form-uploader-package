@@ -1,13 +1,17 @@
 import {
   FILES_ERROR_KEY,
   createFormUploader,
+  type FormChangeDetail,
   type FormSubmitDetail,
   type FormUploader,
   type FormUploaderConfig,
+  type NormalizedField,
+  type ValidationErrors,
 } from "./core.js";
 
 export const ELEMENT_NAME = "form-uploader";
 export const SUBMIT_EVENT = "form-submit";
+export const CHANGE_EVENT = "form-change";
 
 const BaseElement: typeof HTMLElement =
   (globalThis as { HTMLElement?: typeof HTMLElement }).HTMLElement ??
@@ -28,7 +32,7 @@ function formatBytes(bytes: number): string {
 }
 
 const STYLES = [
-  ":host { display: block; font: inherit; color-scheme: light dark; }",
+  ":host { display: block; font: inherit; color-scheme: light dark; container-type: inline-size; }",
   ":host {",
   "  --fu-accent: #2563eb;",
   "  --fu-accent-hover: #1d4ed8;",
@@ -54,8 +58,14 @@ const STYLES = [
   "    --fu-ring: rgb(96 165 250 / 0.35);",
   "  }",
   "}",
-  "form { display: grid; gap: 1rem; color: var(--fu-text); }",
-  ".field { min-width: 0; }",
+  "form { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; color: var(--fu-text); }",
+  ".field { min-width: 0; grid-column: span 2; }",
+  ".field.half { grid-column: span 1; }",
+  "@container (max-width: 28rem) { .field.half { grid-column: span 2; } }",
+  ".group { grid-column: span 2; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 0; padding: 1rem; border: 1px solid var(--fu-border); border-radius: var(--fu-radius); background: var(--fu-surface); }",
+  ".group-title { grid-column: span 2; font-size: 0.875rem; font-weight: 600; }",
+  ".group-description { grid-column: span 2; font-size: 0.8125rem; color: var(--fu-muted); margin: 0; }",
+  ".help { font-size: 0.8125rem; color: var(--fu-muted); margin: 0.375rem 0 0; }",
   ".field > label:not(.dropzone) { display: grid; gap: 0.375rem; font-size: 0.875rem; font-weight: 500; }",
   "input, textarea { font: inherit; color: var(--fu-text); background: var(--fu-surface); border: 1px solid var(--fu-border); border-radius: var(--fu-radius); padding: 0.625rem 0.75rem; width: 100%; box-sizing: border-box; transition: border-color 0.15s ease, box-shadow 0.15s ease; }",
   "input::placeholder, textarea::placeholder { color: var(--fu-muted); opacity: 1; }",
@@ -138,6 +148,29 @@ export class FormUploaderElement extends BaseElement {
     return host.getAttribute("submit-label") || "Submit";
   }
 
+  private fieldHtml(
+    field: NormalizedField,
+    values: Record<string, string>,
+    errors: ValidationErrors,
+  ): string {
+    const value = escapeHtml(values[field.name] ?? "");
+    const error = errors[field.name]
+      ? `<p class="error" part="error">${escapeHtml(errors[field.name])}</p>`
+      : "";
+    const label = escapeHtml(field.label || field.name);
+    const placeholder = field.placeholder ? ` placeholder="${escapeHtml(field.placeholder)}"` : "";
+    const required = field.required ? " required" : "";
+    const safeName = escapeHtml(field.name);
+    const invalid = errors[field.name] ? ` aria-invalid="true"` : "";
+    const width = field.width === "half" ? " half" : "";
+    const help = field.help ? `<p class="help" part="help">${escapeHtml(field.help)}</p>` : "";
+    const control =
+      field.type === "textarea"
+        ? `<textarea part="input" data-field="${safeName}" rows="4"${placeholder}${required}${invalid}>${value}</textarea>`
+        : `<input part="input" data-field="${safeName}" type="${field.type}" value="${value}"${placeholder}${required}${invalid} />`;
+    return `<div class="field${width}" part="field"><label part="label"><span>${label}</span>${control}</label>${help}${error}</div>`;
+  }
+
   private render(): void {
     const host = this as unknown as HTMLElement;
     if (typeof host.attachShadow !== "function") return;
@@ -149,26 +182,31 @@ export class FormUploaderElement extends BaseElement {
     const files = this.uploaderInstance.getFiles();
     const fileConfig = this.uploaderInstance.fileConfig;
 
-    const fieldsHtml = this.uploaderInstance.fields
-      .map((field) => {
-        const value = escapeHtml(values[field.name] ?? "");
-        const error = errors[field.name]
-          ? `<p class="error" part="error">${escapeHtml(errors[field.name])}</p>`
+    const groups = this.elementConfig.groups ?? [];
+    const knownGroups = new Set(groups.map((group) => group.name));
+    const renderField = (field: NormalizedField): string => this.fieldHtml(field, values, errors);
+    const ungroupedHtml = this.uploaderInstance.fields
+      .filter((field) => !field.group || !knownGroups.has(field.group))
+      .map(renderField)
+      .join("");
+    const groupsHtml = groups
+      .map((group) => {
+        const members = this.uploaderInstance.fields.filter((field) => field.group === group.name);
+        if (members.length === 0) return "";
+        const title = escapeHtml(group.title);
+        const description = group.description
+          ? `<p class="group-description" part="group-description">${escapeHtml(group.description)}</p>`
           : "";
-        const label = escapeHtml(field.label || field.name);
-        const placeholder = field.placeholder
-          ? ` placeholder="${escapeHtml(field.placeholder)}"`
-          : "";
-        const required = field.required ? " required" : "";
-        const safeName = escapeHtml(field.name);
-        const invalid = errors[field.name] ? ` aria-invalid="true"` : "";
-        const control =
-          field.type === "textarea"
-            ? `<textarea part="input" data-field="${safeName}" rows="4"${placeholder}${required}${invalid}>${value}</textarea>`
-            : `<input part="input" data-field="${safeName}" type="${field.type}" value="${value}"${placeholder}${required}${invalid} />`;
-        return `<div class="field" part="field"><label part="label"><span>${label}</span>${control}</label>${error}</div>`;
+        return (
+          `<div class="group" part="group" role="group" aria-label="${title}">` +
+          `<span class="group-title" part="group-title">${title}</span>` +
+          description +
+          members.map(renderField).join("") +
+          `</div>`
+        );
       })
       .join("");
+    const fieldsHtml = ungroupedHtml + groupsHtml;
 
     const fileError = errors[FILES_ERROR_KEY] ?? this.fileNotice;
     const dropzoneTitle = fileConfig.accept === "image/*" ? "Choose images" : "Choose files";
@@ -208,7 +246,9 @@ export class FormUploaderElement extends BaseElement {
     shadow.querySelectorAll("[data-field]").forEach((el) => {
       el.addEventListener("input", () => {
         const name = (el as HTMLElement).dataset.field;
-        if (name) this.uploaderInstance.setValue(name, (el as HTMLInputElement).value);
+        if (!name) return;
+        this.uploaderInstance.setValue(name, (el as HTMLInputElement).value);
+        this.afterChange();
       });
     });
 
@@ -222,23 +262,103 @@ export class FormUploaderElement extends BaseElement {
             : null;
       }
       fileInput.value = "";
+      if (this.elementConfig.validateOnChange) this.uploaderInstance.validate();
       this.render();
+      this.focusFileInput();
+      this.emitChange();
     });
 
     shadow.querySelectorAll("[data-remove]").forEach((button) => {
       button.addEventListener("click", () => {
         this.uploaderInstance.removeFile(Number((button as HTMLElement).dataset.remove));
         this.fileNotice = null;
+        if (this.elementConfig.validateOnChange) this.uploaderInstance.validate();
         this.render();
+        this.focusFileInput();
+        this.emitChange();
       });
     });
+  }
+
+  private afterChange(): void {
+    if (this.elementConfig.validateOnChange) {
+      const focus = this.snapshotFocus();
+      this.uploaderInstance.validate();
+      this.render();
+      this.restoreFocus(focus);
+    }
+    this.emitChange();
+  }
+
+  private emitChange(): void {
+    const errors = this.uploaderInstance.getErrors();
+    const detail: FormChangeDetail = {
+      values: this.uploaderInstance.getValues(),
+      files: this.uploaderInstance.getFiles(),
+      errors,
+      valid: Object.keys(errors).length === 0,
+    };
+    const host = this as unknown as HTMLElement;
+    host.dispatchEvent(new CustomEvent(CHANGE_EVENT, { detail, bubbles: true, composed: true }));
+  }
+
+  private snapshotFocus(): { name: string | null; start: number; end: number } {
+    const host = this as unknown as HTMLElement;
+    const active = host.shadowRoot?.activeElement as HTMLElement | null;
+    const name = active?.dataset?.field ?? null;
+    let start = -1;
+    let end = -1;
+    if (name && active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) {
+      try {
+        const control = active as unknown as HTMLInputElement;
+        start = control.selectionStart ?? -1;
+        end = control.selectionEnd ?? -1;
+      } catch {
+        start = -1;
+        end = -1;
+      }
+    }
+    return { name, start, end };
+  }
+
+  private restoreFocus(focus: { name: string | null; start: number; end: number }): void {
+    if (!focus.name) return;
+    const host = this as unknown as HTMLElement;
+    const controls = host.shadowRoot?.querySelectorAll("[data-field]");
+    let next: HTMLElement | null = null;
+    if (controls) {
+      for (const el of controls) {
+        if ((el as HTMLElement).dataset.field === focus.name) next = el as HTMLElement;
+      }
+    }
+    if (next) next.focus({ preventScroll: true });
+    if (focus.start >= 0 && next && (next.tagName === "INPUT" || next.tagName === "TEXTAREA")) {
+      try {
+        (next as unknown as HTMLInputElement).setSelectionRange(focus.start, focus.end);
+      } catch {
+        return;
+      }
+    }
+  }
+
+  private focusFileInput(): void {
+    const host = this as unknown as HTMLElement;
+    const fileInput = host.shadowRoot?.querySelector("[data-files]") as HTMLElement | null;
+    fileInput?.focus({ preventScroll: true });
   }
 
   private async handleSubmit(): Promise<void> {
     this.fileNotice = null;
     const { valid } = this.uploaderInstance.validate();
     this.render();
-    if (!valid) return;
+    if (!valid) {
+      const host = this as unknown as HTMLElement;
+      const firstInvalid = host.shadowRoot?.querySelector(
+        "[aria-invalid='true']",
+      ) as HTMLElement | null;
+      firstInvalid?.focus();
+      return;
+    }
     const detail: FormSubmitDetail = {
       formData: this.uploaderInstance.buildPayload(),
       values: this.uploaderInstance.getValues(),

@@ -1,6 +1,6 @@
 {
   "name": "form-uploader",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Reusable contact + multi-image upload form: framework-agnostic core and a drop-in custom element for any website.",
   "author": "Elbeg Darkhanbaatar",
   "repository": {
@@ -29,23 +29,51 @@
     "./element": {
       "types": "./dist/element.d.ts",
       "default": "./dist/element.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "default": "./dist/react.js"
+    },
+    "./vue": {
+      "types": "./dist/vue.d.ts",
+      "default": "./dist/vue.js"
     }
   },
   "files": [
     "dist",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && npm run build:browser",
+    "build:browser": "esbuild src/element.ts --bundle --format=iife --minify --outfile=dist/form-uploader.global.js",
     "test": "npm run build && node --test test/",
     "prepack": "npm run build",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
   "license": "MIT",
+  "peerDependencies": {
+    "react": ">=18",
+    "vue": "^3"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    }
+  },
   "devDependencies": {
+    "@types/react": "^19.3.0",
+    "esbuild": "^0.28.2",
+    "happy-dom": "^21.0.4",
     "prettier": "^3.9.10",
-    "typescript": "^7.0.2"
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "typescript": "^7.0.2",
+    "vue": "^3.5.45"
   }
 }

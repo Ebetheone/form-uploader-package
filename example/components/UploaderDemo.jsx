@@ -1,32 +1,38 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import "form-uploader/element";
+import { useMemo, useRef, useState } from "react";
+import { FormUploader } from "form-uploader/react";
 import { DEFAULT_FIELDS } from "form-uploader";
 
 export default function UploaderDemo() {
   const formRef = useRef(null);
   const [result, setResult] = useState(null);
-
-  useEffect(() => {
-    const el = formRef.current;
-    if (!el) return;
-    el.config = {
-      fields: [...DEFAULT_FIELDS, { name: "company", label: "Company" }],
-      files: { maxFiles: 3 },
-    };
-    el.onSubmit = async ({ values, files, formData }) => {
-      setResult({
-        values,
-        files: files.map((file) => `${file.name} (${file.size} bytes)`),
-        formDataKeys: [...formData.keys()],
-      });
-    };
-  }, []);
+  const fields = useMemo(
+    () => [
+      { ...DEFAULT_FIELDS[0], width: "half" },
+      { ...DEFAULT_FIELDS[1], width: "half" },
+      ...DEFAULT_FIELDS.slice(2),
+      { name: "company", label: "Company", help: "Where do you work?" },
+    ],
+    [],
+  );
+  const files = useMemo(() => ({ maxFiles: 3 }), []);
 
   return (
     <section>
-      <form-uploader ref={formRef} submit-label="Send" />
+      <FormUploader
+        ref={formRef}
+        fields={fields}
+        files={files}
+        submitLabel="Send"
+        onSubmit={async ({ values, files: submitted, formData }) => {
+          setResult({
+            values,
+            files: submitted.map((file) => `${file.name} (${file.size} bytes)`),
+            formDataKeys: [...formData.keys()],
+          });
+        }}
+      />
       <div className="actions">
         <button
           type="button"
