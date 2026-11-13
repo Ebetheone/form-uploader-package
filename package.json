@@ -1,6 +1,6 @@
 {
   "name": "form-uploader",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Reusable contact + multi-image upload form: framework-agnostic core and a drop-in custom element for any website.",
   "author": "Elbeg Darkhanbaatar",
   "homepage": "https://github.com/Ebetheone/form-uploader-package",

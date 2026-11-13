@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2
+
+- Republish to refresh the registry listing.
+
 ## 0.2.1
 
 - Point repository and homepage links at the renamed GitHub repo.
